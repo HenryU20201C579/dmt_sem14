@@ -2,26 +2,19 @@
 import streamlit as st
 import pickle
 import pandas as pd
-import os
 
-# función para cargar modelos de forma segura
-def load_pickle(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as file:
-            return pickle.load(file)
-    else:
-        st.error(f"Error: el archivo {file_path} no se encuentra.")
-        return None
+# cargar los modelos y el codificador de etiquetas
+with open('log_reg.pkl', 'rb') as lo:
+    log_reg = pickle.load(lo)
 
-# cargar modelos y codificador de etiquetas
-log_reg = load_pickle('log_reg.pkl')
-svc_m = load_pickle('svc_m.pkl')
-tree_clf = load_pickle('tree_clf.pkl')
-le = load_pickle('label_encoder.pkl')
+with open('svc_m.pkl', 'rb') as sv:
+    svc_m = pickle.load(sv)
 
-# verificar si los modelos y el codificador se cargaron correctamente
-if log_reg is None or svc_m is None or tree_clf is None or le is None:
-    st.stop()  # detener ejecución si hay archivos faltantes
+with open('tree_clf.pkl', 'rb') as tr:
+    tree_clf = pickle.load(tr)
+
+with open('label_encoder.pkl', 'rb') as le_file:
+    le = pickle.load(le_file)
 
 # función para clasificar las especies
 def classify(num):
@@ -29,23 +22,33 @@ def classify(num):
 
 # función principal de la app
 def main():
+    # título de la aplicación
     st.title('Clasificación de Especies de Peces')
+
+    # título en el sidebar
     st.sidebar.header('Parámetros de Entrada del Usuario')
 
     # función para capturar los parámetros del usuario
     def user_input_parameters():
-        length = st.sidebar.slider('Length (cm)', 5.0, 40.0, 10.0)
-        weight = st.sidebar.slider('Weight (g)', 1.0, 1500.0, 300.0)
+        length = st.sidebar.slider('Length (cm)', float(5), float(40), float(10))
+        weight = st.sidebar.slider('Weight (g)', float(1), float(1500), float(300))
         w_l_ratio = weight / length
         data = {'length': length, 'weight': weight, 'w_l_ratio': w_l_ratio}
-        return pd.DataFrame(data, index=[0])
+        features = pd.DataFrame(data, index=[0])
+        return features
 
+    # capturar los parámetros ingresados por el usuario
     df = user_input_parameters()
+
+    # escoger el modelo preferido
     option = ['Logistic Regression', 'SVM', 'Decision Tree']
     model = st.sidebar.selectbox('Selecciona el modelo que deseas usar:', option)
+
+    # mostrar los parámetros de entrada
     st.subheader('Parámetros de Entrada del Usuario')
     st.write(df)
 
+    # realizar la predicción cuando se hace clic en "RUN"
     if st.button('RUN'):
         if model == 'Logistic Regression':
             prediction = log_reg.predict(df)
